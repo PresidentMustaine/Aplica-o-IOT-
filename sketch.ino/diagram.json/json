@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "author": "Luigi",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": -20, "left": 100, "attrs": {} },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": -61,
+      "left": -19.2,
+      "attrs": { "color": "green" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn2",
+      "top": 15.8,
+      "left": -57.6,
+      "attrs": { "color": "red" }
+    }
+  ],
+  "connections": [
+    [ "btn1:1.l", "esp:26", "green", [ "v0" ] ],
+    [ "btn2:1.l", "esp:27", "red", [ "v0" ] ],
+    [ "btn2:2.r", "esp:GND.2", "red", [ "h31.4", "v82.4" ] ],
+    [ "btn1:2.r", "esp:GND.1", "yellow", [ "h230.6", "v-9.4" ] ],
+    [ "esp:D26", "btn1:1.r", "yellow", [ "h-28.2", "v-138.6" ] ],
+    [ "btn2:1.r", "esp:D27", "red", [ "v53.4", "h60.2" ] ]
+  ],
+  "dependencies": {}
+}

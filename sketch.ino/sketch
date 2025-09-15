@@ -1,0 +1,79 @@
+#include <WiFi.h>
+#include <PubSubClient.h>
+
+// Configuração do Wi-Fi (no Wokwi use Wokwi-GUEST)
+const char* ssid = "Wokwi-GUEST";
+const char* password = "";
+
+// Broker MQTT (público)
+const char* mqtt_server = "broker.hivemq.com"; 
+const int mqtt_port = 1883;
+const char* mqtt_topic = "futebol_feminino/gols";
+
+// GPIOs simulando sensores IR (botões)
+const int pinSensorA = 26; 
+const int pinSensorB = 27;
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+// Controle de tempo
+unsigned long lastGoalTime = 0;
+const unsigned long antiRetriggerMs = 3000; 
+const unsigned long confirmWindowMs = 500; 
+const unsigned long debounceMs = 50;
+
+unsigned long lastInterruptA = 0;
+unsigned long lastInterruptB = 0;
+
+void setup_wifi() {
+  WiFi.begin(ssid, password);
+  Serial.print("Conectando ao WiFi...");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("Conectado!");
+}
+
+void publishGoal() {
+  if (millis() - lastGoalTime < antiRetriggerMs) return;
+  lastGoalTime = millis();
+  
+  char payload[128];
+  snprintf(payload, sizeof(payload), "{\"event\":\"goal\",\"ts_ms\":%lu}", millis());
+  Serial.println(payload); // mostra no Serial Monitor
+  client.publish(mqtt_topic, payload);
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(pinSensorA, INPUT_PULLUP); 
+  pinMode(pinSensorB, INPUT_PULLUP);
+
+  setup_wifi();
+  client.setServer(mqtt_server, mqtt_port);
+}
+
+void loop() {
+  client.loop();
+
+  int stateA = digitalRead(pinSensorA);
+  int stateB = digitalRead(pinSensorB);
+
+  unsigned long now = millis();
+
+  if (stateA == LOW && (now - lastInterruptA > debounceMs)) {
+    lastInterruptA = now;
+    if (abs((long)(now - lastInterruptB)) <= (long)confirmWindowMs) {
+      publishGoal();
+    }
+  }
+
+  if (stateB == LOW && (now - lastInterruptB > debounceMs)) {
+    lastInterruptB = now;
+    if (abs((long)(now - lastInterruptA)) <= (long)confirmWindowMs) {
+      publishGoal();
+    }
+  }
+}
